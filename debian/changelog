@@ -1,5 +1,100 @@
-template-repository (1.0-1) unstable; urgency=medium
+gcc-xtensa (14) unstable; urgency=medium
 
-  * Initial release
+  * Rename source package to gcc-xtensa as prelude to building esp32
+    variants.
+  * Update to GCC 13
+  * Clean up patches + src directories in clean target (Closes: #1049802)
+  * Bump debhelper compat level to 13
+  * Bump Standards-Version to 4.6.2
+  * Make debian/rules more generic in preparation for building ESP32
+    variants
 
- -- Tsic404 <liuheng@deepin.org>  Sat, 28 Jan 2023 13:46:49 +0800
+ -- Jonathan McDowell <noodles@earth.li>  Sun, 05 Nov 2023 18:22:13 +0000
+
+gcc-xtensa-lx106 (13) unstable; urgency=medium
+
+  * Re-enable debugging (Closes: #1032564)
+
+ -- Jonathan McDowell <noodles@earth.li>  Sat, 11 Mar 2023 11:17:37 +0000
+
+gcc-xtensa-lx106 (12) unstable; urgency=medium
+
+  * Update to GCC 12 (Closes: #1023698)
+
+ -- Jonathan McDowell <noodles@earth.li>  Wed, 07 Dec 2022 21:58:27 +0000
+
+gcc-xtensa-lx106 (11) unstable; urgency=medium
+
+  * Fix D autopkgtest to not output to stderr when there's no error.
+
+ -- Jonathan McDowell <noodles@earth.li>  Wed, 20 Jul 2022 10:08:06 +0100
+
+gcc-xtensa-lx106 (10) unstable; urgency=medium
+
+  * Enable D compiler. Thanks to Witold Baryluk. (Closes: #961090)
+  * Update to GCC 11
+  * Fix compilation with usrmerge by forcibly configuring paths. Thanks
+    to Vagrant Cascadian (Closes: #1003495)
+
+ -- Jonathan McDowell <noodles@earth.li>  Mon, 18 Jul 2022 08:32:48 +0100
+
+gcc-xtensa-lx106 (9) unstable; urgency=medium
+
+  * Fix pulling in of Debian GCC patches.
+  * Depend on autoconf2.69 instead of just autoconf. (Closes: #978819)
+
+ -- Jonathan McDowell <noodles@earth.li>  Thu, 26 Aug 2021 09:23:47 +0100
+
+gcc-xtensa-lx106 (8) unstable; urgency=medium
+
+  * Update to GCC 10 (Closes: #978512)
+
+ -- Jonathan McDowell <noodles@earth.li>  Sat, 02 Jan 2021 14:49:43 +0000
+
+gcc-xtensa-lx106 (7) unstable; urgency=medium
+
+  * Updated force-m32 patch for GCC 9.3.0. (Closes: #959622)
+
+ -- Jonathan McDowell <noodles@earth.li>  Sun, 03 May 2020 18:42:56 +0100
+
+gcc-xtensa-lx106 (6) unstable; urgency=medium
+
+  * Update for GCC move from SVN to GIT.
+
+ -- Jonathan McDowell <noodles@earth.li>  Sun, 23 Feb 2020 17:41:52 +0000
+
+gcc-xtensa-lx106 (5) unstable; urgency=medium
+
+  * Force u?int32_t types to use int, not long, to match Espressif SDK
+  * Update autopkgtest to use AUTOPKGTEST_TMP instead of ADTTMP
+  * Fix up GCC standard linked libraries
+
+ -- Jonathan McDowell <noodles@earth.li>  Sun, 05 Jan 2020 09:38:51 +0000
+
+gcc-xtensa-lx106 (4) unstable; urgency=medium
+
+  * Update to GCC 9 (Closes: #944165)
+
+ -- Jonathan McDowell <noodles@earth.li>  Sun, 01 Dec 2019 10:22:27 +0000
+
+gcc-xtensa-lx106 (3) unstable; urgency=medium
+
+  [ Helmut Grohne ]
+  * Add a very simple autopkgtest to compile an empty file. (Closes: #927050)
+
+  [ Jonathan McDowell ]
+  * Override hardening-no-pie lintian check, as per gcc-8 package
+
+ -- Jonathan McDowell <noodles@earth.li>  Fri, 26 Jul 2019 17:24:26 -0300
+
+gcc-xtensa-lx106 (2) unstable; urgency=medium
+
+  *  Remove unnecessary build-deps (Closes: #921855)
+
+ -- Jonathan McDowell <noodles@earth.li>  Wed, 27 Feb 2019 14:55:11 +0000
+
+gcc-xtensa-lx106 (1) unstable; urgency=medium
+
+  * First release, based on gcc-arm-none-eabi (Closes: #917547)
+
+ -- Jonathan McDowell <noodles@earth.li>  Sun, 30 Dec 2018 10:19:18 +0000

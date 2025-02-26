@@ -1,0 +1,10 @@
+#!/bin/sh
+set -u
+set -e
+cd "$AUTOPKGTEST_TMP"
+cat >test.c <<'EOF'
+void _start()
+{
+}
+EOF
+xtensa-lx106-elf-gcc -nostdlib test.c

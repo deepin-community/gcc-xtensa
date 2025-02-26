@@ -1,0 +1,2 @@
+Tests: compile-empty-lx106, compile-simple-d-lx106
+Depends: gcc-xtensa-lx106

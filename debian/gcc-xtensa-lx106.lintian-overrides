@@ -1,0 +1,9 @@
+#
+# All of the libgcc bits are non-native, which is kinda the point
+#
+gcc-xtensa-lx106 binary: binary-from-other-architecture
+gcc-xtensa-lx106 binary: binary-without-manpage
+#
+# gcc-8 overrides this
+#
+gcc-xtensa-lx106 binary: hardening-no-pie
