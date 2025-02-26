@@ -1,0 +1,15 @@
+usr/lib/libcc1.la
+usr/lib/libcc1.so
+usr/lib/libcc1.so.0
+usr/lib/libcc1.so.0.0.0
+usr/share/man/man1/xtensa-lx106-elf-cpp.1
+usr/share/man/man1/xtensa-lx106-elf-g++.1
+usr/share/man/man1/xtensa-lx106-elf-gcc.1
+usr/share/man/man1/xtensa-lx106-elf-gcov-dump.1
+usr/share/man/man1/xtensa-lx106-elf-gcov-tool.1
+usr/share/man/man1/xtensa-lx106-elf-gcov.1
+usr/share/man/man1/xtensa-lx106-elf-gdc.1
+usr/share/man/man1/xtensa-lx106-elf-lto-dump.1
+usr/share/man/man7/fsf-funding.7
+usr/share/man/man7/gfdl.7
+usr/share/man/man7/gpl.7

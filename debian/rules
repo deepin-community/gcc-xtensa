@@ -1,4 +1,151 @@
 #!/usr/bin/make -f
+export DH_VERBOSE=1
+
+GCC_TARGETS := $(shell dh_listpackages | sed -nr 's/^gcc-xtensa-//p')
+
+GCC_VERSION=13
+GCC_PACKAGE=gcc-$(GCC_VERSION)
+GCC_DIR := /usr/src/gcc-13
+GCC_TARBALL := $(notdir $(wildcard $(GCC_DIR)/gcc-*.tar.*))
+
+top_dir=$(shell pwd)
+stampdir=debian/stamp
+
+source_version := $(shell dpkg-query -W -f="\$${Version}\n" $(GCC_PACKAGE)-source)
+deb_version := $(source_version)+$(shell dpkg-parsechangelog | sed -ne "s/^Version: \(.*\)/\1/p")
+deb_upstream_version := $(shell echo $(deb_version) | cut -d- -f1)
+base_version := $(shell echo $(deb_version) | sed -e 's/\([1-9]\.[0-9]\).*-.*/\1/')
+BUILT_USING := $(shell dpkg-query -f '$${source:Package} (= $${source:Version}), ' -W $(GCC_PACKAGE)-source)
+
+export DEB_BUILD_MAINT_OPTIONS=hardening=+all,-format
+buildflags:=$(shell dpkg-buildflags --export=configure) INHIBIT_LIBC_CFLAGS="-DUSE_TM_CLONE_REGISTRY=0"
+
+target_tools=\
+	AR_FOR_TARGET=$(target)-ar \
+	AS_FOR_TARGET=$(target)-as \
+	LD_FOR_TARGET=$(target)-ld \
+	NM_FOR_TARGET=$(target)-nm \
+	OBJDUMP_FOR_TARGET=$(target)-objdump \
+	RANLIB_FOR_TARGET=$(target)-ranlib \
+	READELF_FOR_TARGET=$(target)-readelf \
+	STRIP_FOR_TARGET=$(target)-strip
+
+define configure_flags
+	--enable-languages=c,c++,d,lto \
+	--prefix=/usr/lib \
+	--infodir=/usr/share/doc/gcc-xtensa-$(1)/info \
+	--mandir=/usr/share/man \
+	--htmldir=/usr/share/doc/gcc-xtensa-$(1)/html \
+	--pdfdir=/usr/share/doc/gcc-xtensa-$(1)/pdf \
+	--bindir=/usr/bin \
+	--libexecdir=/usr/lib \
+	--libdir=/usr/lib \
+	--with-system-zlib \
+	--enable-multilib \
+	--disable-decimal-float \
+	--disable-libffi \
+	--disable-libgomp \
+	--disable-libmudflap \
+	--disable-libphobos \
+	--disable-libquadmath \
+	--disable-libquadmath-support \
+	--disable-libssp \
+	--disable-libstdcxx-pch \
+	--disable-libstdc++-v3 \
+	--disable-nls \
+	--disable-shared \
+	--disable-threads \
+	--disable-tls \
+	--enable-lto \
+	--enable-target-optspace \
+	--disable-__cxa_atexit \
+	--without-long-double-128 \
+	--disable-multilib \
+	--enable-cxx-flags=-fno-exceptions \
+	--build=$(DEB_BUILD_GNU_TYPE) \
+	--host=$(DEB_HOST_GNU_TYPE) \
+	--target=xtensa-$(1)-elf \
+	--with-gnu-as \
+	--with-gnu-ld \
+	--with-headers=no \
+	--without-newlib \
+	"--with-pkgversion=$(deb_version)" \
+	--without-included-gettext \
+	SED=/bin/sed \
+	SHELL=/bin/sh \
+	BASH=/bin/bash \
+	CONFIG_SHELL=/bin/bash \
+	$(buildflags) \
+	$(target_tools)
+endef
 
 %:
 	dh $@
+
+source/src:
+	install -d source
+	tar -C source -xf $(GCC_DIR)/$(GCC_TARBALL)
+	mv source/gcc-$(GCC_VERSION)* source/src
+	cp /usr/share/doc/$(GCC_PACKAGE)-source/copyright debian/copyright-gcc
+	cp -a $(GCC_DIR)/debian/patches source/
+	mkdir -p $(stampdir)
+	set -ex; \
+		cd source; \
+		GFDL_INVARIANT_FREE=yes \
+		patchdir=$(top_dir)/source/patches \
+		stampdir=$(top_dir)/$(stampdir) \
+		make -f $(GCC_DIR)/debian/rules.patch series; \
+		QUILT_PATCHES=$(top_dir)/source/patches QUILT_PATCH_OPTS='-E' \
+		quilt --quiltrc /dev/null push -a; \
+	touch src/gcc/distro-defaults.h; \
+	set -ex; \
+		cd src; \
+		for patch in ../../debian/local-patches/[0-9]*.patch; do \
+			echo Applying patch "$$patch"; \
+			patch -p1 < "$$patch"; \
+		done
+
+source/gcc-%: source/src
+	cp -al $< $@
+	cp debian/overlay/$*/include/xtensa-config.h $@/include/
+
+configure-%: source/gcc-%
+	install -d build/gcc-$*
+	cd build/gcc-$* && $(CURDIR)/$</configure $(call configure_flags,$*)
+
+auto_build-%:
+	dh_auto_build -pgcc-xtensa-$* -Dsource/gcc-$* -Bbuild/gcc-$*
+
+auto_install-%:
+	(cd build/gcc-lx106/xtensa-lx106-elf/libgcc/ && xtensa-lx106-elf-ar -M <$(top_dir)/debian/strip-libgcc-funcs.txt)
+	#dh_auto_install -pgcc-xtensa-$* -Dsource/gcc-$* -Bbuild/gcc-$* --destdir debian/gcc-xtensa-$*
+	dh_auto_install -pgcc-xtensa-$* -Dsource/gcc-$* -Bbuild/gcc-$* --destdir debian/gcc-xtensa-$*
+	rm -r debian/gcc-xtensa-$*/usr/share/man/
+	rm debian/gcc-xtensa-$*/usr/lib/libcc*
+
+override_dh_auto_build: $(addprefix auto_build-,$(GCC_TARGETS))
+	dh_auto_build --remaining-packages
+
+override_dh_auto_configure: $(addprefix configure-,$(GCC_TARGETS))
+
+override_dh_auto_clean:
+	rm -rf build source debian/copyright-gcc $(stampdir)
+	dh_autoreconf_clean
+
+override_dh_auto_test:
+	@echo "no testing, that's way too painful"
+#	dh_auto_test -Dsrc -B$(build_dir) --max-parallel=1
+
+override_dh_gencontrol:
+	dh_gencontrol -a -- -v$(deb_version) -Vlocal:Version=$(deb_upstream_version) -Vgcc:Version=$(source_version) -VBuilt-Using="$(BUILT_USING)"
+
+override_dh_auto_install: $(addprefix auto_install-,$(GCC_TARGETS))
+
+override_dh_installchangelogs:
+	dh_installchangelogs source/src/ChangeLog
+
+override_dh_compress:
+	dh_compress -Xexamples/
+
+override_dh_strip:
+	dh_strip -X.a

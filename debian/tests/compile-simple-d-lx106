@@ -1,0 +1,74 @@
+#!/bin/sh
+set -u
+set -e
+
+cd "$AUTOPKGTEST_TMP"
+
+# Provide boilerplate object.d with no runtime implementation,
+# this is required to run on a bare metal.
+# It is automatically imported implicitly by other D modules.
+echo "module object;" > object.d
+
+cat >testd.d <<'EOF'
+module testd;
+
+// Some sanity checks. (These are independent of architecture).
+static assert(int.sizeof == 4);
+static assert(ulong.sizeof == 8);
+// Architecture dependent.
+static assert((void*).sizeof == 4);
+
+// Used both in CTFE and in generated code.
+int fib(int n) @nogc pure {
+  int a = 1, b = 1;
+  foreach (i; 0 .. n - 2) {
+    const c = a + b;
+    a = b;
+    b = c;
+  }
+  return b;
+}
+
+// Test some CTFEs
+static assert(fib(10) == 55);
+
+// Test compile-time precomputations
+static immutable int[] fibs = (){
+  int[30] ret;
+  foreach (i, ref v; ret) {
+    v = fib(i);
+  }
+  return ret;
+}();
+static assert(fibs.length == 30);
+
+// Test interfacing to C and C++ (mangling, ABI).
+extern(C) void someC(const int*, ushort*);
+extern(C++) void someCPP(const int*, ushort*);
+
+void _mymain() {
+  // Test templates and nesting.
+  static struct A(T) {
+    T x;
+    T y;
+  }
+  A!ushort a;
+
+  // Test inline assembler.
+  int result = 3;
+//  version (Xtensa_LX106) {
+    asm { "addi %[X], %[X], 42" : [X] "+r" (result) : ; }
+//  } else {
+//    static assert(0, "Wrong version.");
+//  }
+  a.x = cast(short)result;
+
+  // Test calling C and C++.
+  someC(fibs.ptr, &a.x);
+  someCPP(fibs.ptr, &a.y);
+}
+
+EOF
+
+xtensa-lx106-elf-gdc -fno-druntime -c testd.d object.d -o testd.o
+xtensa-lx106-elf-gdc -fno-druntime -frelease -O1 -c testd.d object.d -o testd_release_opt.o
